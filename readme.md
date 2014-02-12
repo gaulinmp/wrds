@@ -13,7 +13,13 @@ Contact: eddyhu at the gmails
 	- CRSP Monthly, COMPUSTAT Annual and Quarterly data
 		- Aligns accounting fundamentals with market prices
 	- Computes several anomaly characteristics
-		- net stock issuance, total accruals, net operating assets, asset growth, investment to assets, return on assets, Ohlson's O-Score
+		- net stock issuance
+		- total accruals
+		- net operating assets
+		- asset growth
+		- investment to assets
+		- return on assets
+		- Ohlson's O-Score
 	- Uses PostgreSQL (via SQLAlchemy) to access/store data
 		- Easily configurable for MySQL
 	- Returns query results as pandas.DataFrames or record tuples
