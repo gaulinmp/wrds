@@ -1,0 +1,5 @@
+*.py[cod]
+
+# Sublime projects
+*.sublime-workspace
+*.sublime-project
