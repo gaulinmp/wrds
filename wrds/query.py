@@ -9,7 +9,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.exc import ResourceClosedError
 from pandas.tseries.offsets import *
 from .createtable import CreateTableAs
-from util import timeit
+from .util import timeit
 
 class wrds_query(object):
     """Generative interface for querying WRDS tables.
@@ -42,10 +42,10 @@ class wrds_query(object):
 
         # copy options
         self.options.update(kwargs)
-        
+
         # modify/set default options
-        chunksize = kwargs.get('chunksize') or 100000
-        as_recarray = kwargs.get('as_recarray') or False
+        chunksize = kwargs.get('chunksize', 100000)
+        as_recarray = kwargs.get('as_recarray', False)
 
         res = self.query.execute()
         rows = self._yield_data(res,chunksize,as_recarray)
@@ -59,24 +59,25 @@ class wrds_query(object):
                 rows = pd.concat(rows)
 
         # maybe_parse, maybe_index
-        
+
         return rows
 
     @timeit
     def create_table(self):
-        if self.new_table_name:
+        new_table_name = self.options.get('new_table_name')
+        if new_table_name:
             # Execute statement and commit changes to DB.
             self.query.execution_options(autocommit=True).execute()
-            logging.debug('Table {0} created.'.format(self.new_table_name))
+            logging.debug('Table {0} created.'.format(new_table_name))
         else:
             pass
             logging.debug('No table to create.')
 
     def _yield_data(self,res,chunksize,as_recarray):
-        
-        try: 
+
+        try:
             while res.returns_rows:
-                
+
                 rows = res.fetchmany(chunksize)
                 if as_recarray:
                     yield rows
@@ -85,7 +86,7 @@ class wrds_query(object):
         except ResourceClosedError:
             logging.debug('ResultProxy empty')
             pass
-    
+
 
     def _to_df(self, rows, res, **kwargs):
         """Makes a DataFrame from records with columns.
@@ -96,7 +97,14 @@ class wrds_query(object):
         return pd.DataFrame.from_records(rows,\
                     columns=res.keys(), coerce_float=True)
 
-
+'''
+ .o88b.  .d88b.  .88b  d88. d8888b.         .d8b.  d8b   db d8b   db
+d8P  Y8 .8P  Y8. 88'YbdP`88 88  `8D        d8' `8b 888o  88 888o  88
+8P      88    88 88  88  88 88oodD'        88ooo88 88V8o 88 88V8o 88
+8b      88    88 88  88  88 88~~~   C8888D 88~~~88 88 V8o88 88 V8o88
+Y8b  d8 `8b  d8' 88  88  88 88             88   88 88  V888 88  V888
+ `Y88P'  `Y88P'  YP  YP  YP 88             YP   YP VP   V8P VP   V8P
+ '''
 class funda_query(wrds_query):
     """Generative interface for querying COMPUSTAT.FUNDA."""
 
@@ -196,7 +204,7 @@ class funda_query(wrds_query):
         # Get the unique set of columns/variables
         funda_vars = list(set(funda_vars))
         # Create the 'raw' select statement
-        query = CreateTableAs(funda_vars, new_table_name, limit=self.limit).\
+        query = CreateTableAs(funda_vars, new_table_name, limit=limit).\
                     where(funda.c.indfmt=='INDL').\
                     where(funda.c.datafmt=='STD').\
                     where(funda.c.popsrc=='D').\
@@ -208,7 +216,7 @@ class funda_query(wrds_query):
             # Add in PERMNO and PERMCO from CCMXPF_LINKTABLE
             funda_vars += [ccmxpf_linktable.c.lpermno,ccmxpf_linktable.c.lpermco]
             # Create the 'raw' select statement
-            query = CreateTableAs(funda_vars, new_table_name, limit=self.limit).\
+            query = CreateTableAs(funda_vars, new_table_name, limit=limit).\
                         where(funda.c.indfmt=='INDL').\
                         where(funda.c.datafmt=='STD').\
                         where(funda.c.popsrc=='D').\
@@ -245,8 +253,16 @@ class funda_query(wrds_query):
             funda_df.reset_index(inplace=True)
 
         funda_df.set_index(['gvkey','date'],inplace=True)
-        return funda_df        
+        return funda_df
 
+'''
+ .o88b.  .d88b.  .88b  d88. d8888b.         .d88b.
+d8P  Y8 .8P  Y8. 88'YbdP`88 88  `8D        .8P  Y8.
+8P      88    88 88  88  88 88oodD'        88    88
+8b      88    88 88  88  88 88~~~   C8888D 88    88
+Y8b  d8 `8b  d8' 88  88  88 88             `8P  d8'
+ `Y88P'  `Y88P'  YP  YP  YP 88              `Y88'Y8
+ '''
 class fundq_query(wrds_query):
     """Generative interface for querying COMPUSTAT.FUNDQ."""
 
@@ -290,7 +306,7 @@ class fundq_query(wrds_query):
         fundq_vars = list(set(fundq_vars))
 
         # Create the 'raw' select statement
-        query = CreateTableAs(fundq_vars, new_table_name, limit=self.limit).\
+        query = CreateTableAs(fundq_vars, new_table_name, limit=limit).\
                     where(fundq.c.indfmt=='INDL').\
                     where(fundq.c.datafmt=='STD').\
                     where(fundq.c.popsrc=='D').\
@@ -302,7 +318,7 @@ class fundq_query(wrds_query):
             # Add in PERMNO and PERMCO from CCMXPF_LINKTABLE
             fundq_vars += [ccmxpf_linktable.c.lpermno,ccmxpf_linktable.c.lpermco]
 
-            query = CreateTableAs(fundq_vars, new_table_name, limit=self.limit).\
+            query = CreateTableAs(fundq_vars, new_table_name, limit=limit).\
                         where(fundq.c.indfmt=='INDL').\
                         where(fundq.c.datafmt=='STD').\
                         where(fundq.c.popsrc=='D').\
@@ -355,16 +371,26 @@ class fundq_query(wrds_query):
         fundq_df.set_index(['gvkey','date'],inplace=True)
         return fundq_df
 
+'''
+ .o88b. d8888b. .d8888. d8888b.        .88b  d88.
+d8P  Y8 88  `8D 88'  YP 88  `8D        88'YbdP`88
+8P      88oobY' `8bo.   88oodD'        88  88  88
+8b      88`8b     `Y8b. 88~~~   C8888D 88  88  88
+Y8b  d8 88 `88. db   8D 88             88  88  88
+ `Y88P' 88   YD `8888Y' 88             YP  YP  YP
+ '''
 class msf_query(wrds_query):
 
-    def __init__(self, engine=None, start_date='1925-12-31', end_date='',
-               other=[], limit=None, new_table_name='crsp_m', **kwargs):
+    def __init__(self, engine=None, me=True, start_date='1925-12-31', end_date='',
+               other=[], limit=None, new_table_name='', **kwargs):
         """Generatively create SQL query to MSF.
 
             Parameters
             ----------
             new_table_name: str, default ''
                 name if a new db table is requested
+            cei: bool, default True
+                compute composite equity issuance
             start_date: str, default '1925-12-31'
                 start of sample, default is beginning of CRSP
             end_date: str, default ''
@@ -378,39 +404,35 @@ class msf_query(wrds_query):
         logging.info("---- Creating a CRSP.MSF query session. ----")
         msf = self.tables['msf']
         msenames = self.tables['msenames']
-        crsp_m = self.tables.get(new_table_name)
 
         msf_vars = [msf.c.permno, msf.c.permco, msf.c.date,
                     msf.c.prc, msf.c.shrout, msf.c.ret, msf.c.retx]
         mse_vars = [msenames.c.ticker, msenames.c.ncusip,
                     msenames.c.shrcd, msenames.c.exchcd, msenames.c.hsiccd]
 
-        if self.tables.has_key(new_table_name):
-            query = crsp_m.select()
+        if me:
+            # ME = ABS(PRC * SHROUT);
+            msf_vars += [(sa.func.abs(msf.c.prc)*msf.c.shrout).label('me')]
 
-            if limit:
-                query = query.limit(self.limit)
-            if start_date:
-                query = query.where(crsp_m.c.date >= start_date)
-            if end_date:
-                query = query.where(crsp_m.c.date <= end_date)
-        else:
-            query = CreateTableAs(msf_vars+mse_vars, new_table_name, limit=self.limit)
+        # Get the unique set of columns/variables
+        msf_vars = list(set(msf_vars))
 
-            query = query.\
-                where(msf.c.permno == msenames.c.permno).\
-                where(msf.c.date >= msenames.c.namedt).\
-                where(msf.c.date <= msenames.c.nameendt)
+        query = CreateTableAs(msf_vars+mse_vars, new_table_name, limit=limit)
 
-            if start_date:
-                query = query.where(msf.c.date >= start_date)
-            if end_date:
-                query = query.where(msf.c.date <= end_date)
+        query = query.\
+            where(msf.c.permno == msenames.c.permno).\
+            where(msf.c.date >= msenames.c.namedt).\
+            where(msf.c.date <= msenames.c.nameendt)
+
+        if start_date:
+            query = query.where(msf.c.date >= start_date)
+        if end_date:
+            query = query.where(msf.c.date <= end_date)
 
         logging.debug(query)
         self.query = query
 
-    def _to_df(self, res):
+    def _to_df(self, rows, res, **kwargs):
 
         crsp_df = pd.DataFrame.from_records(rows,\
                          columns=res.keys(), coerce_float=True)
@@ -422,7 +444,7 @@ class msf_query(wrds_query):
 class dsf_query(wrds_query):
 
     def __init__(self, engine=None, start_date='1925-12-31', end_date='',
-               other=[], limit=None, new_table_name='crsp_d', **kwargs):
+               other=[], limit=None, new_table_name='', **kwargs):
         super(dsf_query, self).__init__(engine, limit, new_table_name)
         logging.info("---- Creating a CRSP.DSF query session. ----")
 
@@ -431,50 +453,38 @@ class dsf_query(wrds_query):
 class ccm_names_query(wrds_query):
 
     def __init__(self, engine=None, start_date='1925-12-31', end_date='',
-               other=[], limit=None, new_table_name='ccm_names', **kwargs):
+               other=[], limit=None, new_table_name='', **kwargs):
         super(ccm_names_query, self).__init__(engine, limit, new_table_name)
         logging.info("---- Creating a CCM-MSENAMES query session. ----")
 
         msenames = self.tables['msenames']
         ccmxpf_linktable = self.tables['ccmxpf_linktable']
-        ccm_names = self.tables.get(new_table_name)
 
         id_vars = [msenames.c.permno, msenames.c.permco,
                      ccmxpf_linktable.c.gvkey, msenames.c.comnam]
 
-        if self.tables.has_key(new_table_name):
-            query = ccm_names.select()
+        query = CreateTableAs(id_vars+\
+                        [func.min(msenames.c.namedt).label('sdate'),
+                        func.max(msenames.c.nameendt).label('edate')],
+                    new_table_name,
+                    group_by = id_vars,
+                    order_by = id_vars,
+                    limit= self.limit).\
+            where(ccmxpf_linktable.c.linktype.startswith('L')).\
+            where(ccmxpf_linktable.c.linkprim.in_(['P','C'])).\
+            where(ccmxpf_linktable.c.usedflag==1).\
+            where((ccmxpf_linktable.c.linkdt <= msenames.c.namedt) |
+                  (ccmxpf_linktable.c.linkdt == None)).\
+            where((msenames.c.nameendt <= ccmxpf_linktable.c.linkenddt) |
+                  (ccmxpf_linktable.c.linkenddt == None)).\
+            where(msenames.c.permno == ccmxpf_linktable.c.lpermno).\
+            where(msenames.c.permco == ccmxpf_linktable.c.lpermco)
 
-            if limit:
-                query = query.limit(self.limit)
-            if start_date:
-                query = query.where(ccm_names.c.sdate >= start_date)
-            if end_date:
-                query = query.where(ccm_names.c.edate <= end_date)
+        if start_date:
+            query = query.having(func.min(msenames.c.namedt) >= start_date)
 
-        else:
-            query = CreateTableAs(id_vars+\
-                            [func.min(msenames.c.namedt).label('sdate'), 
-                            func.max(msenames.c.nameendt).label('edate')],
-                        new_table_name,
-                        group_by = id_vars,
-                        order_by = id_vars,
-                        limit= self.limit).\
-                where(ccmxpf_linktable.c.linktype.startswith('L')).\
-                where(ccmxpf_linktable.c.linkprim.in_(['P','C'])).\
-                where(ccmxpf_linktable.c.usedflag==1).\
-                where((ccmxpf_linktable.c.linkdt <= msenames.c.namedt) |
-                      (ccmxpf_linktable.c.linkdt == None)).\
-                where((msenames.c.nameendt <= ccmxpf_linktable.c.linkenddt) |
-                      (ccmxpf_linktable.c.linkenddt == None)).\
-                where(msenames.c.permno == ccmxpf_linktable.c.lpermno).\
-                where(msenames.c.permco == ccmxpf_linktable.c.lpermco)
-
-            if start_date:
-                query = query.having(func.min(msenames.c.namedt) >= start_date)
-
-            if end_date:
-                query = query.having(func.max(msenames.c.nameendt) <= end_date)
+        if end_date:
+            query = query.having(func.max(msenames.c.nameendt) <= end_date)
 
         logging.debug(query)
         self.query = query

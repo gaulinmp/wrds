@@ -14,7 +14,9 @@ Contact: eddyhu at the gmails
 		- Aligns accounting fundamentals with market prices
 	- Computes several anomaly characteristics
 		- net stock issuance
+		- composie equity issuance
 		- total accruals
+		- gross profitability
 		- net operating assets
 		- asset growth
 		- investment to assets
@@ -25,4 +27,8 @@ Contact: eddyhu at the gmails
 	- Returns query results as pandas.DataFrames or record tuples
 
 ## TO-DO:
-	- Implement DSF support for MOM, IVOL, and BAB anomalies
+	- Implement DSF support
+		- MOM
+		- IVOL
+		- BAB
+		- CHSDP
