@@ -32,3 +32,6 @@ Contact: eddyhu at the gmails
 		- IVOL
 		- BAB
 		- CHSDP
+	- MSF
+		- adjust returns for delistings
+		- compute annual market equity based vwret
