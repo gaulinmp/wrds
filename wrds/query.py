@@ -234,7 +234,7 @@ class funda_query(wrds_query):
         logging.debug(query)
         self.query = query
 
-    def _to_df(rows, res, delay=6, **kwargs):
+    def _to_df(self, rows, res, delay=6, **kwargs):
         """Reads query results into pandas.DataFrame.
 
            Parameters
@@ -336,7 +336,7 @@ class fundq_query(wrds_query):
         logging.debug(query)
         self.query = query
 
-    def _to_df(rows, res, delay=3):
+    def _to_df(self, rows, res, delay=3):
         """Reads query results into pandas.DataFrame.
 
            Parameters
