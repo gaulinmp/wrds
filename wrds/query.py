@@ -19,6 +19,8 @@ class wrds_query(object):
         """Initialization logs in to DB, sets up tables."""
         if not engine:
             self.engine = sa.create_engine('postgresql://eddyhu:asdf@localhost:5432/wrds')
+        else:
+            self.engine = engine
         self.metadata = sa.MetaData(self.engine)
         self.metadata.reflect()
         self.tables = self.metadata.tables
@@ -44,11 +46,11 @@ class wrds_query(object):
         self.options.update(kwargs)
 
         # modify/set default options
-        chunksize = kwargs.get('chunksize', 100000)
-        as_recarray = kwargs.get('as_recarray', False)
+        chunksize = kwargs.pop('chunksize', 100000)
+        as_recarray = kwargs.pop('as_recarray', False)
 
         res = self.query.execute()
-        rows = self._yield_data(res,chunksize,as_recarray)
+        rows = self._yield_data(res,chunksize,as_recarray,**kwargs)
 
         # note: using original options
         if not self.options.get('chunksize'):
@@ -73,16 +75,16 @@ class wrds_query(object):
             pass
             logging.debug('No table to create.')
 
-    def _yield_data(self,res,chunksize,as_recarray):
+    def _yield_data(self, res, chunksize, as_recarray, **kwargs):
 
         try:
             while res.returns_rows:
-
                 rows = res.fetchmany(chunksize)
-                if as_recarray:
-                    yield rows
-                else:
-                    yield self._to_df(rows,res)
+                if rows:
+                    if as_recarray:
+                        yield rows
+                    else:
+                        yield self._to_df(rows, res, **kwargs)
         except ResourceClosedError:
             logging.debug('ResultProxy empty')
             pass
