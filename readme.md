@@ -7,7 +7,7 @@ Institution: [Rice University](http://business.rice.edu)
 Contact: eddyhu at the gmails
 
 ## What is it
-**wrds** is a Python package for interfacing with [`WRDS`](http://wrds.wharton.upenn.edu) data (currently local dbs only). It simplifies a lot of the standard data munging activities (querying, merging, cleaning) for `CRSP` and `COMPUSTAT` data, and allows the user to quickly access key variables of interest to conduct empirical analyses.
+**wrds** is a Python package for interfacing with **WRDS**(http://wrds.wharton.upenn.edu) data (currently local dbs only). It simplifies a lot of the standard data munging activities (querying, merging, cleaning) for **CRSP** and **COMPUSTAT** data, and allows the user to quickly access key variables of interest to conduct empirical analyses.
 
 ## Features
 	- CRSP Monthly, COMPUSTAT Annual and Quarterly data
