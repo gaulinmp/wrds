@@ -1,6 +1,6 @@
 # wrds: Python Interface for querying WRDS datasets (CRSP, COMPUSTAT)
 
-Author: Eddy Hu
+Author: Eddy (Edwin) Hu
 
 Institution: [Rice University](http://business.rice.edu)
 
