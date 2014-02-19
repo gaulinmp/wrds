@@ -2,7 +2,7 @@
 
 Author: Eddy Hu
 
-Institution: Rice University
+Institution: [Rice University](http://business.rice.edu)
 
 Contact: eddyhu at the gmails
 
