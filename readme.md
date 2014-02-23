@@ -33,5 +33,6 @@ Contact: eddyhu at the gmails
 		- BAB
 		- CHSDP
 	- MSF
-		- adjust returns for delistings
+		- ~~adjust returns for delistings~~
+		- aggregate market equity by permco
 		- compute annual market equity based vwret
