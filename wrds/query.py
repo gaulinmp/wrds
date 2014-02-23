@@ -15,7 +15,7 @@ class wrds_query(object):
     """Generative interface for querying WRDS tables.
     """
 
-    def __init__(self, engine=None, limit = None, new_table_name=''):
+    def __init__(self, engine=None, limit = None):
         """Initialization logs in to DB, sets up tables."""
         if not engine:
             self.engine = sa.create_engine('postgresql://eddyhu:asdf@localhost:5432/wrds')
@@ -29,7 +29,6 @@ class wrds_query(object):
         # options
         self.options = {}
         self.options['limit'] = limit
-        self.options['new_table_name'] = new_table_name
 
     @timeit
     def read_frame(self, **kwargs):
@@ -65,15 +64,19 @@ class wrds_query(object):
         return rows
 
     @timeit
-    def create_table(self):
-        new_table_name = self.options.get('new_table_name')
-        if new_table_name:
-            # Execute statement and commit changes to DB.
-            self.query.execution_options(autocommit=True).execute()
-            logging.debug('Table {0} created.'.format(new_table_name))
-        else:
-            pass
-            logging.debug('No table to create.')
+    def create_table(self, new_table_name, drop=True):
+        if self.engine.has_table(new_table_name):
+            new_table = self.tables.get(new_table_name)
+            if drop:
+                new_table.drop(self.engine, checkfirst=True)
+                logging.debug('Old {0} table dropped.'.format(new_table_name))
+
+        a = self.query.alias('a')
+        query = CreateTableAs(a.c, new_table_name)
+        logging.debug(query)
+        # Execute statement and commit changes to DB.
+        query.execution_options(autocommit=True).execute()
+        logging.debug('Table {0} created.'.format(new_table_name))
 
     def _yield_data(self, res, chunksize, as_recarray, **kwargs):
 
@@ -114,7 +117,7 @@ class funda_query(wrds_query):
                  be=True, me_comp=False, nsi=False,
                  tac=False, noa=False, gp=False, ag=False, ia=False,
                  roa=False, oscore=False, permno=True, other=[],
-                 limit = None, new_table_name='', **kwargs):
+                 limit = None, **kwargs):
         """Generatively create SQL query to FUNDA.
 
             Parameters
@@ -145,7 +148,7 @@ class funda_query(wrds_query):
                 List of other FUNDA variables to include
 
         """
-        super(funda_query, self).__init__(engine, limit, new_table_name)
+        super(funda_query, self).__init__(engine, limit)
         logging.info("---- Creating a COMPUSTAT.FUNDA query session. ----")
 
         funda = self.tables['funda']
@@ -206,7 +209,7 @@ class funda_query(wrds_query):
         # Get the unique set of columns/variables
         funda_vars = list(set(funda_vars))
         # Create the 'raw' select statement
-        query = CreateTableAs(funda_vars, new_table_name, limit=limit).\
+        query = sa.select(funda_vars, limit=limit).\
                     where(funda.c.indfmt=='INDL').\
                     where(funda.c.datafmt=='STD').\
                     where(funda.c.popsrc=='D').\
@@ -214,23 +217,19 @@ class funda_query(wrds_query):
 
         if permno:
             # Merge in PERMNO and PERMCO
+            a = query.alias('a');b = ccmxpf_linktable.alias('b')
 
             # Add in PERMNO and PERMCO from CCMXPF_LINKTABLE
-            funda_vars += [ccmxpf_linktable.c.lpermno,ccmxpf_linktable.c.lpermco]
-            # Create the 'raw' select statement
-            query = CreateTableAs(funda_vars, new_table_name, limit=limit).\
-                        where(funda.c.indfmt=='INDL').\
-                        where(funda.c.datafmt=='STD').\
-                        where(funda.c.popsrc=='D').\
-                        where(funda.c.consol=='C').\
-                        where(ccmxpf_linktable.c.linktype.startswith('L')).\
-                        where(ccmxpf_linktable.c.linkprim.in_(['P','C'])).\
-                        where(ccmxpf_linktable.c.usedflag==1).\
-                        where((ccmxpf_linktable.c.linkdt <= funda.c.datadate) |
-                              (ccmxpf_linktable.c.linkdt == None)).\
-                        where((funda.c.datadate <= ccmxpf_linktable.c.linkenddt) |
-                              (ccmxpf_linktable.c.linkenddt == None)).\
-                        where(funda.c.gvkey == ccmxpf_linktable.c.gvkey)
+            query = sa.select([a, b.c.lpermno,b.c.lpermco],
+                              limit=limit).\
+                        where(b.c.linktype.startswith('L')).\
+                        where(b.c.linkprim.in_(['P','C'])).\
+                        where(b.c.usedflag==1).\
+                        where((b.c.linkdt <= a.c.datadate) |
+                              (b.c.linkdt == None)).\
+                        where((a.c.datadate <= b.c.linkenddt) |
+                              (b.c.linkenddt == None)).\
+                        where(a.c.gvkey == b.c.gvkey)
 
         # Save the query and return ResultProxy
         logging.debug(query)
@@ -269,7 +268,7 @@ class fundq_query(wrds_query):
     """Generative interface for querying COMPUSTAT.FUNDQ."""
 
     def __init__(self, engine=None, roa=True, chsdp=False,
-                 permno=True, other=[], limit=None, new_table_name='', **kwargs):
+                 permno=True, other=[], limit=None, **kwargs):
         """Generatively create SQL query to FUNDA.
 
             Parameters
@@ -282,7 +281,7 @@ class fundq_query(wrds_query):
                 List of other FUNDA variables to include
 
         """
-        super(fundq_query, self).__init__(engine, limit, new_table_name)
+        super(fundq_query, self).__init__(engine, limit)
         logging.info("---- Creating a COMPUSTAT.FUNDQ query session. ----")
 
         fundq = self.tables['fundq']
@@ -308,7 +307,7 @@ class fundq_query(wrds_query):
         fundq_vars = list(set(fundq_vars))
 
         # Create the 'raw' select statement
-        query = CreateTableAs(fundq_vars, new_table_name, limit=limit).\
+        query = sa.select(fundq_vars, limit=limit).\
                     where(fundq.c.indfmt=='INDL').\
                     where(fundq.c.datafmt=='STD').\
                     where(fundq.c.popsrc=='D').\
@@ -320,7 +319,7 @@ class fundq_query(wrds_query):
             # Add in PERMNO and PERMCO from CCMXPF_LINKTABLE
             fundq_vars += [ccmxpf_linktable.c.lpermno,ccmxpf_linktable.c.lpermco]
 
-            query = CreateTableAs(fundq_vars, new_table_name, limit=limit).\
+            query = sa.select(fundq_vars, limit=limit).\
                         where(fundq.c.indfmt=='INDL').\
                         where(fundq.c.datafmt=='STD').\
                         where(fundq.c.popsrc=='D').\
@@ -383,8 +382,8 @@ Y8b  d8 88 `88. db   8D 88             88  88  88
  '''
 class msf_query(wrds_query):
 
-    def __init__(self, engine=None, me=True, start_date='1925-12-31', end_date='',
-               other=[], limit=None, new_table_name='', **kwargs):
+    def __init__(self, engine=None, me=True, delist=True, start_date='1925-12-31', end_date='',
+               other=[], limit=None, **kwargs):
         """Generatively create SQL query to MSF.
 
             Parameters
@@ -402,10 +401,11 @@ class msf_query(wrds_query):
                 limit the number of results in query
 
         """
-        super(msf_query, self).__init__(engine, limit, new_table_name)
+        super(msf_query, self).__init__(engine, limit)
         logging.info("---- Creating a CRSP.MSF query session. ----")
         msf = self.tables['msf']
         msenames = self.tables['msenames']
+        msedelist = self.tables['msedelist']
 
         msf_vars = [msf.c.permno, msf.c.permco, msf.c.date,
                     msf.c.prc, msf.c.shrout, msf.c.ret, msf.c.retx]
@@ -419,7 +419,7 @@ class msf_query(wrds_query):
         # Get the unique set of columns/variables
         msf_vars = list(set(msf_vars))
 
-        query = CreateTableAs(msf_vars+mse_vars, new_table_name, limit=limit)
+        query = sa.select(msf_vars+mse_vars, limit=limit)
 
         query = query.\
             where(msf.c.permno == msenames.c.permno).\
@@ -430,6 +430,20 @@ class msf_query(wrds_query):
             query = query.where(msf.c.date >= start_date)
         if end_date:
             query = query.where(msf.c.date <= end_date)
+
+        if delist:
+            a = query.alias('a');b = msedelist.alias('b')
+            query = sa.select([a,((1+a.c.ret)*\
+                              (1+sa.func.coalesce(b.c.dlret,0))).label('ret_adj')],
+                               limit=limit).\
+            select_from(sa.join(a, b,
+                sa.and_(
+                    a.c.permno == b.c.permno,
+                    sa.func.extract('year',a.c.date) == sa.func.extract('year',b.c.dlstdt),
+                    sa.func.extract('month',a.c.date) == sa.func.extract('month',b.c.dlstdt)
+                ),
+                isouter=True)
+            )
 
         logging.debug(query)
         self.query = query
@@ -446,8 +460,8 @@ class msf_query(wrds_query):
 class dsf_query(wrds_query):
 
     def __init__(self, engine=None, start_date='1925-12-31', end_date='',
-               other=[], limit=None, new_table_name='', **kwargs):
-        super(dsf_query, self).__init__(engine, limit, new_table_name)
+               other=[], limit=None, **kwargs):
+        super(dsf_query, self).__init__(engine, limit)
         logging.info("---- Creating a CRSP.DSF query session. ----")
 
         raise NotImplementedError('No dsf support yet')
@@ -455,8 +469,8 @@ class dsf_query(wrds_query):
 class ccm_names_query(wrds_query):
 
     def __init__(self, engine=None, start_date='1925-12-31', end_date='',
-               other=[], limit=None, new_table_name='', **kwargs):
-        super(ccm_names_query, self).__init__(engine, limit, new_table_name)
+               other=[], limit=None, **kwargs):
+        super(ccm_names_query, self).__init__(engine, limit)
         logging.info("---- Creating a CCM-MSENAMES query session. ----")
 
         msenames = self.tables['msenames']
@@ -465,10 +479,9 @@ class ccm_names_query(wrds_query):
         id_vars = [msenames.c.permno, msenames.c.permco,
                      ccmxpf_linktable.c.gvkey, msenames.c.comnam]
 
-        query = CreateTableAs(id_vars+\
+        query = sa.select(id_vars+\
                         [func.min(msenames.c.namedt).label('sdate'),
                         func.max(msenames.c.nameendt).label('edate')],
-                    new_table_name,
                     group_by = id_vars,
                     order_by = id_vars,
                     limit= self.limit).\

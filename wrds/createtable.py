@@ -29,10 +29,6 @@ class CreateTableAs(Select):
 def s_create_table_as(element, compiler, **kw):
     """Compile the statement."""
     text = compiler.visit_select(element)
-    # store a copy of the select statement by itself
-    element.select = text
-    if not element.new_table_name:
-        return text
 
     spec = ['CREATE', 'TABLE', element.new_table_name, 'AS SELECT']
 
@@ -49,5 +45,6 @@ def s_create_table_as(element, compiler, **kw):
     if on_commit:
         spec.insert(len(spec)-1, on_commit)
 
-    text = text.replace('SELECT', ' '.join(spec))
+    # replace the outermost select statement
+    text = text.replace('SELECT', ' '.join(spec), 1)
     return text
