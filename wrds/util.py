@@ -37,3 +37,22 @@ def COALESCE(x, varlist):
     nix = x.isnull()
     x[nix] = varlist.pop(0)[nix]
     return COALESCE(x, varlist)
+
+@timeit
+def to_df(res, firm_id='permno', date='date', delay=None):
+
+    df = pd.DataFrame(res.fetchall(),columns=res.keys())
+    df[date] = pd.to_datetime(df[date])
+
+    if delay:
+        df.set_index([date],inplace=True)
+        df = df.tshift(delay,'M')
+        df.reset_index(inplace=True)
+
+    if date:
+        df.set_index(date,inplace=True)
+    if firm_id:
+        df.set_index(firm_id,inplace=True,append=True)
+    df.sort_index(inplace=True)
+
+    return df

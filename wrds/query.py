@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import datetime
 import itertools
+import sql
 
 import logging, pdb
 from sqlalchemy.sql import func
@@ -71,8 +72,8 @@ class wrds_query(object):
                 new_table.drop(self.engine, checkfirst=True)
                 logging.debug('Old {0} table dropped.'.format(new_table_name))
 
-        a = self.query.alias('a')
-        query = CreateTableAs(a.c, new_table_name)
+        create = self.query.alias('create')
+        query = CreateTableAs(create.c, new_table_name)
         logging.debug(query)
         # Execute statement and commit changes to DB.
         query.execution_options(autocommit=True).execute()
@@ -382,14 +383,16 @@ Y8b  d8 88 `88. db   8D 88             88  88  88
  '''
 class msf_query(wrds_query):
 
-    def __init__(self, engine=None, me=True, delist=True, start_date='1925-12-31', end_date='',
+    def __init__(self, engine=None, delist=True, vwm=6, start_date='1925-12-31', end_date='',
                other=[], limit=None, **kwargs):
         """Generatively create SQL query to MSF.
 
             Parameters
             ----------
-            new_table_name: str, default ''
-                name if a new db table is requested
+            delist: bool, default True
+                compute ret_adj, returns adjusted for delistings
+            vwm: int, default 6
+                month from which annual portfolio value-weights are computed
             cei: bool, default True
                 compute composite equity issuance
             start_date: str, default '1925-12-31'
@@ -408,13 +411,10 @@ class msf_query(wrds_query):
         msedelist = self.tables['msedelist']
 
         msf_vars = [msf.c.permno, msf.c.permco, msf.c.date,
-                    msf.c.prc, msf.c.shrout, msf.c.ret, msf.c.retx]
+                    msf.c.prc, msf.c.shrout, msf.c.ret, msf.c.retx,
+                    (sa.func.abs(msf.c.prc)*msf.c.shrout).label('me')]
         mse_vars = [msenames.c.ticker, msenames.c.ncusip,
                     msenames.c.shrcd, msenames.c.exchcd, msenames.c.hsiccd]
-
-        if me:
-            # ME = ABS(PRC * SHROUT);
-            msf_vars += [(sa.func.abs(msf.c.prc)*msf.c.shrout).label('me')]
 
         # Get the unique set of columns/variables
         msf_vars = list(set(msf_vars))
@@ -434,9 +434,9 @@ class msf_query(wrds_query):
         if delist:
             a = query.alias('a');b = msedelist.alias('b')
             query = sa.select([a,((1+a.c.ret)*\
-                              (1+sa.func.coalesce(b.c.dlret,0))).label('ret_adj')],
-                               limit=limit).\
-            select_from(sa.join(a, b,
+                              (1+sa.func.coalesce(b.c.dlret,0))-1).label('ret_adj')],
+                               limit=limit)\
+            .select_from(sa.join(a, b,
                 sa.and_(
                     a.c.permno == b.c.permno,
                     sa.func.extract('year',a.c.date) == sa.func.extract('year',b.c.dlstdt),
@@ -444,6 +444,28 @@ class msf_query(wrds_query):
                 ),
                 isouter=True)
             )
+
+        if vwm:
+            a = query.alias('a')
+            b = sa.select([sql.fiscal_year(a.c.date,vwm,True).label('fdate'), a]).alias('b')
+            c = sa.select([sql.fiscal_year(a.c.date,vwm,True).label('fdate'),
+                          a.c.date, a.c.permno, a.c.me])\
+                        .where(sa.func.extract('month',a.c.date) == vwm).alias('c')
+            query = sa.select([b,
+                              (c.c.me*sa.func.exp(
+                                  sa.func.sum(sa.func.ln(1+sa.func.coalesce(b.c.ret,0)))\
+                                  .over(partition_by=[b.c.permno,
+                                        sa.func.extract('year',b.c.fdate)],
+                                        order_by=[b.c.fdate]))).label('vweight')
+                              ])\
+                        .select_from(
+                            sa.join(b, c,
+                                sa.and_(
+                                    b.c.permno == c.c.permno,
+                                    sa.func.extract('year',b.c.fdate) == sa.func.extract('year',c.c.fdate)+1
+                                ),
+                            isouter=True)
+                        )
 
         logging.debug(query)
         self.query = query

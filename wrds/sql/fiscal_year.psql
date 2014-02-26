@@ -1,0 +1,25 @@
+CREATE OR REPLACE FUNCTION fiscal_year(d date, m int, last boolean)
+    RETURNS date
+    LANGUAGE plpgsql
+AS
+$$
+    DECLARE
+        year int;
+        month int;
+        new_date date;
+    BEGIN
+        year := EXTRACT(YEAR FROM d);
+        month := EXTRACT(MONTH FROM d);
+        IF month > m THEN
+            year := year+1;
+        END IF;
+        month := 1+((month - m + 11)::int % 12);
+        new_date := format('%s-%s-%s', year, month, 1)::date;
+        IF last = TRUE THEN
+            new_date := (date_trunc('MONTH', new_date) + INTERVAL '1 MONTH - 1 day')::date;
+        END IF;
+        RETURN new_date;
+    END;
+$$;
+
+ --select fiscal_year('2007-07-01', 6, TRUE);

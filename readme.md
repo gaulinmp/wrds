@@ -12,6 +12,9 @@ Contact: eddyhu at the gmails
 ## Features
 	- CRSP Monthly, COMPUSTAT Annual and Quarterly data
 		- Aligns accounting fundamentals with market prices
+		- Computes delisting returns [Shumway (1997)](http://onlinelibrary.wiley.com/doi/10.1111/j.1540-6261.1997.tb03818.x/abstract)
+		- Computes annual buy-and-hold market equity for use as portfolio value weights
+		- Convenience functions for accessing Fama-French Factors
 	- Computes several anomaly characteristics
 		- net stock issuance
 		- composie equity issuance
