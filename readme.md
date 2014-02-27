@@ -55,30 +55,30 @@ Which creates a SQL statement:
 **wrds** merges in **CRSP** **permno**s so that the **permno-gvkey** link is unique, and computes book equity following [Fama and French (1993)](http://www.sciencedirect.com/science/article/pii/0304405X93900235), and [Davis, Fama, and French (2000)](http://onlinelibrary.wiley.com/doi/10.1111/0022-1082.00209/abstract).
 
 ## Features
-	- CRSP Monthly, COMPUSTAT Annual and Quarterly data
-		- Aligns accounting fundamentals with market prices
-		- Computes delisting returns [Shumway (1997)](http://onlinelibrary.wiley.com/doi/10.1111/j.1540-6261.1997.tb03818.x/abstract)
-		- Computes annual buy-and-hold market equity for use as portfolio value weights
-		- Convenience functions for accessing Fama-French Factors
-	- Computes several anomaly characteristics
-		- net stock issuance
-		- composie equity issuance
-		- total accruals
-		- gross profitability
-		- net operating assets
-		- asset growth
-		- investment to assets
-		- return on assets
-		- Ohlson's O-Score
-	- Uses PostgreSQL (via SQLAlchemy) to access/store data
-		- Easily configurable for MySQL
-	- Returns query results as pandas.DataFrames or record tuples
+- CRSP Monthly, COMPUSTAT Annual and Quarterly data
+	- Aligns accounting fundamentals with market prices
+	- Computes delisting returns [Shumway (1997)](http://onlinelibrary.wiley.com/doi/10.1111/j.1540-6261.1997.tb03818.x/abstract)
+	- Computes annual buy-and-hold market equity for use as portfolio value weights
+	- Convenience functions for accessing Fama-French Factors
+- Computes several anomaly characteristics
+	- net stock issuance
+	- composie equity issuance
+	- total accruals
+	- gross profitability
+	- net operating assets
+	- asset growth
+	- investment to assets
+	- return on assets
+	- Ohlson's O-Score
+- Uses PostgreSQL (via SQLAlchemy) to access/store data
+	- Easily configurable for MySQL
+- Returns query results as pandas.DataFrames or record tuples
 
 ## TO-DO:
-	- Implement DSF support
-		- MOM
-		- IVOL
-		- BAB
-		- CHSDP
-	- MSF
-		- aggregate market equity by permco
+- Implement DSF support
+	- MOM
+	- IVOL
+	- BAB
+	- CHSDP
+- MSF
+	- aggregate market equity by permco
