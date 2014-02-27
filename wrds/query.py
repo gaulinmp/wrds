@@ -12,11 +12,11 @@ from pandas.tseries.offsets import *
 from .createtable import CreateTableAs
 from .util import timeit
 
-class wrds_query(object):
+class WRDSQuery(object):
     """Generative interface for querying WRDS tables.
     """
 
-    def __init__(self, engine=None, limit = None):
+    def __init__(self, engine=None, limit=None):
         """Initialization logs in to DB, sets up tables."""
         if not engine:
             self.engine = sa.create_engine('postgresql://eddyhu:asdf@localhost:5432/wrds')
@@ -111,14 +111,14 @@ d8P  Y8 .8P  Y8. 88'YbdP`88 88  `8D        d8' `8b 888o  88 888o  88
 Y8b  d8 `8b  d8' 88  88  88 88             88   88 88  V888 88  V888
  `Y88P'  `Y88P'  YP  YP  YP 88             YP   YP VP   V8P VP   V8P
  '''
-class funda_query(wrds_query):
+class FUNDAQuery(WRDSQuery):
     """Generative interface for querying COMPUSTAT.FUNDA."""
 
     def __init__(self, engine=None,
                  be=True, me_comp=False, nsi=False,
                  tac=False, noa=False, gp=False, ag=False, ia=False,
-                 roa=False, oscore=False, permno=True, other=[],
-                 limit = None, **kwargs):
+                 roa=False, oscore=False, permno=True,
+                 limit=None, all_vars=None, **kwargs):
         """Generatively create SQL query to FUNDA.
 
             Parameters
@@ -145,11 +145,9 @@ class funda_query(wrds_query):
                 Ohlson's O-Score = TO-DO
             permno: boolean, default True
                 LPERMNO and LPERMCO from CCMXPF_LINKTABLE
-            other: array-like
-                List of other FUNDA variables to include
 
         """
-        super(funda_query, self).__init__(engine, limit)
+        super(FUNDAQuery, self).__init__(engine, limit)
         logging.info("---- Creating a COMPUSTAT.FUNDA query session. ----")
 
         funda = self.tables['funda']
@@ -202,10 +200,8 @@ class funda_query(wrds_query):
             funda_vars += [funda.c[v.lower()] for v in
                              ('AT','DLTT','DLC','LT','LCT',
                               'NI','SEQ','WCAP','EBITDA')]
-        if other:
-            # OTHER;
-            # Need to restrict other to be a list of strings
-            funda_vars += [funda.c[v.lower()] for v in other]
+        if all_vars:
+            funda_vars += funda.c
 
         # Get the unique set of columns/variables
         funda_vars = list(set(funda_vars))
@@ -221,7 +217,7 @@ class funda_query(wrds_query):
             a = query.alias('a');b = ccmxpf_linktable.alias('b')
 
             # Add in PERMNO and PERMCO from CCMXPF_LINKTABLE
-            query = sa.select([a, b.c.lpermno,b.c.lpermco],
+            query = sa.select([a, b.c.lpermno, b.c.lpermco],
                               limit=limit).\
                         where(b.c.linktype.startswith('L')).\
                         where(b.c.linkprim.in_(['P','C'])).\
@@ -265,11 +261,11 @@ d8P  Y8 .8P  Y8. 88'YbdP`88 88  `8D        .8P  Y8.
 Y8b  d8 `8b  d8' 88  88  88 88             `8P  d8'
  `Y88P'  `Y88P'  YP  YP  YP 88              `Y88'Y8
  '''
-class fundq_query(wrds_query):
+class FUNDQQuery(WRDSQuery):
     """Generative interface for querying COMPUSTAT.FUNDQ."""
 
     def __init__(self, engine=None, roa=True, chsdp=False,
-                 permno=True, other=[], limit=None, **kwargs):
+                 permno=True,  limit=None, all_vars=None, **kwargs):
         """Generatively create SQL query to FUNDA.
 
             Parameters
@@ -278,11 +274,9 @@ class fundq_query(wrds_query):
                 Return on Assets =  IBQ / ATQ
             chsdp: boolean, default False
                 Campbell et. al Default Prob = TO-DO
-            other: array-like
-                List of other FUNDA variables to include
 
         """
-        super(fundq_query, self).__init__(engine, limit)
+        super(FUNDQQuery, self).__init__(engine, limit)
         logging.info("---- Creating a COMPUSTAT.FUNDQ query session. ----")
 
         fundq = self.tables['fundq']
@@ -298,11 +292,8 @@ class fundq_query(wrds_query):
             fundq_vars += [fundq.c[v.lower()] for v in
                              ('NIQ','LTQ','CHEQ','PSTKQ',
                               'TXDITCQ','SEQQ','CEQQ','TXDBQ')]
-
-        if other:
-            # OTHER;
-            # Need to restrict other to be a list of strings
-            fundq_vars += [fundq.c[v.lower()] for v in []]
+        if all_vars:
+            fundq_vars += fundq.c
 
         # Get the unique set of columns/variables
         fundq_vars = list(set(fundq_vars))
@@ -316,23 +307,19 @@ class fundq_query(wrds_query):
 
         if permno:
             # Merge in PERMNO and PERMCO
+            a = query.alias('a');b = ccmxpf_linktable.alias('b')
 
             # Add in PERMNO and PERMCO from CCMXPF_LINKTABLE
-            fundq_vars += [ccmxpf_linktable.c.lpermno,ccmxpf_linktable.c.lpermco]
-
-            query = sa.select(fundq_vars, limit=limit).\
-                        where(fundq.c.indfmt=='INDL').\
-                        where(fundq.c.datafmt=='STD').\
-                        where(fundq.c.popsrc=='D').\
-                        where(fundq.c.consol=='C').\
-                        where(ccmxpf_linktable.c.linktype.startswith('L')).\
-                        where(ccmxpf_linktable.c.linkprim.in_(['P','C'])).\
-                        where(ccmxpf_linktable.c.usedflag==1).\
-                        where((ccmxpf_linktable.c.linkdt <= fundq.c.datadate) |
-                              (ccmxpf_linktable.c.linkdt == None)).\
-                        where((fundq.c.datadate <= ccmxpf_linktable.c.linkenddt) |
-                              (ccmxpf_linktable.c.linkenddt == None)).\
-                        where(fundq.c.gvkey == ccmxpf_linktable.c.gvkey)
+            query = sa.select([a, b.c.lpermno, b.c.lpermco],
+                              limit=limit).\
+                        where(b.c.linktype.startswith('L')).\
+                        where(b.c.linkprim.in_(['P','C'])).\
+                        where(b.c.usedflag==1).\
+                        where((b.c.linkdt <= a.c.datadate) |
+                              (b.c.linkdt == None)).\
+                        where((a.c.datadate <= b.c.linkenddt) |
+                              (b.c.linkenddt == None)).\
+                        where(a.c.gvkey == b.c.gvkey)
 
         # Save the query and return ResultProxy
         logging.debug(query)
@@ -363,6 +350,7 @@ class fundq_query(wrds_query):
             fundq_df.reset_index(inplace=True)
 
         date_diff = fundq_df['rdq'] - fundq_df['date']
+        # 0 days <= date_diff <= 6 mo
         fundq_df['date'][(date_diff > 0) \
          & (date_diff < pd.tseries.offsets.DateOffset(days=182)) ] \
             = fundq_df['rdq']
@@ -381,10 +369,10 @@ d8P  Y8 88  `8D 88'  YP 88  `8D        88'YbdP`88
 Y8b  d8 88 `88. db   8D 88             88  88  88
  `Y88P' 88   YD `8888Y' 88             YP  YP  YP
  '''
-class msf_query(wrds_query):
+class MSFQuery(WRDSQuery):
 
     def __init__(self, engine=None, delist=True, vwm=6, start_date='1925-12-31', end_date='',
-               other=[], limit=None, **kwargs):
+                limit=None, all_vars=None, **kwargs):
         """Generatively create SQL query to MSF.
 
             Parameters
@@ -398,13 +386,11 @@ class msf_query(wrds_query):
             start_date: str, default '1925-12-31'
                 start of sample, default is beginning of CRSP
             end_date: str, default ''
-            other: array-like
-                List of other FUNDA variables to include
             limit: int, default None
                 limit the number of results in query
 
         """
-        super(msf_query, self).__init__(engine, limit)
+        super(MSFQuery, self).__init__(engine, limit)
         logging.info("---- Creating a CRSP.MSF query session. ----")
         msf = self.tables['msf']
         msenames = self.tables['msenames']
@@ -416,12 +402,13 @@ class msf_query(wrds_query):
         mse_vars = [msenames.c.ticker, msenames.c.ncusip,
                     msenames.c.shrcd, msenames.c.exchcd, msenames.c.hsiccd]
 
+        if all_vars:
+            msf_vars += msf.c
+
         # Get the unique set of columns/variables
-        msf_vars = list(set(msf_vars))
+        msf_vars = list(set(msf.c+msf_vars))
 
-        query = sa.select(msf_vars+mse_vars, limit=limit)
-
-        query = query.\
+        query = sa.select(msf_vars+mse_vars, limit=limit).\
             where(msf.c.permno == msenames.c.permno).\
             where(msf.c.date >= msenames.c.namedt).\
             where(msf.c.date <= msenames.c.nameendt)
@@ -479,20 +466,20 @@ class msf_query(wrds_query):
         crsp_df.set_index(['permno','date'],inplace=True)
         return crsp_df
 
-class dsf_query(wrds_query):
+class DSFQuery(WRDSQuery):
 
     def __init__(self, engine=None, start_date='1925-12-31', end_date='',
-               other=[], limit=None, **kwargs):
-        super(dsf_query, self).__init__(engine, limit)
+                limit=None, all_vars=None, **kwargs):
+        super(DSFQuery, self).__init__(engine, limit)
         logging.info("---- Creating a CRSP.DSF query session. ----")
 
         raise NotImplementedError('No dsf support yet')
 
-class ccm_names_query(wrds_query):
+class CCMNamesQuery(WRDSQuery):
 
     def __init__(self, engine=None, start_date='1925-12-31', end_date='',
-               other=[], limit=None, **kwargs):
-        super(ccm_names_query, self).__init__(engine, limit)
+                limit=None, all_vars=None, **kwargs):
+        super(CCMNamesQuery, self).__init__(engine, limit)
         logging.info("---- Creating a CCM-MSENAMES query session. ----")
 
         msenames = self.tables['msenames']
