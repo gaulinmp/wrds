@@ -400,7 +400,7 @@ class MSFQuery(WRDSQuery):
                     msf.c.prc, msf.c.shrout, msf.c.ret, msf.c.retx,
                     (sa.func.abs(msf.c.prc)*msf.c.shrout).label('me')]
         mse_vars = [msenames.c.ticker, msenames.c.ncusip,
-                    msenames.c.shrcd, msenames.c.exchcd, msenames.c.hsiccd]
+                    msenames.c.shrcd, msenames.c.exchcd]
 
         if all_vars:
             msf_vars += msf.c
