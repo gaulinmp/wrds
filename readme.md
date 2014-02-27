@@ -15,7 +15,7 @@ Suppose you want to pull stock returns and market caps in order to do annual por
 	import sqlalchemy as sa
 	import wrds
 
-	msf_query = wrds.msf_queryQuery().query.alias('msf_query')
+	msf_query = wrds.MSFQuery().query.alias('msf_query')
 	q = sa.select([msf_query.c.permno,
                msf_query.c.date,
                msf_query.c.ret_adj,
@@ -36,7 +36,7 @@ the `...` is where the magic happens. **wrds** makes sure that **CRSP** **permno
 
 Pulling book equity from **COMPUSTAT** is just as simple:
 
-	funda_query = wrds.funda_queryQuery().query.alias('funda_query')
+	funda_query = wrds.FUNDAQuery().query.alias('funda_query')
 	q = sa.select([funda_query.c.lpermno,
                funda_query.c.gvkey,
                funda_query.c.datadate,
