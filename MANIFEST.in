@@ -1,0 +1,29 @@
+include README.md
+
+# Load main dir but exclude things we don't want in the distro
+graft wrds
+
+# Include some specific files and data resources we need
+include wrds/.git_commit_info.ini
+
+# Documentation
+graft docs
+exclude docs/\#*
+exclude docs/man/*.1.gz
+
+# Examples
+graft examples
+
+# docs subdirs we want to skip
+prune docs/build
+prune docs/gh-pages
+prune docs/dist
+
+# Patterns to exclude from any directory
+global-exclude *~
+global-exclude *.flc
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude .dircopy.log
+global-exclude .git
+global-exclude .ipynb_checkpoints

@@ -1,4 +1,3 @@
-
 from query import *
 from createtable import *
 import crsp
