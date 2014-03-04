@@ -15,15 +15,17 @@ Suppose you want to pull stock returns and market caps in order to do annual por
 	import sqlalchemy as sa
 	import wrds
 
+```python
 	msf_query = wrds.MSFQuery().query.alias('msf_query')
 	q = sa.select([msf_query.c.permno,
                msf_query.c.date,
                msf_query.c.ret_adj,
                msf_query.c.me,
                msf_query.c.vweight])
-
+```
 Which creates a SQL statement:
 
+```sql
 	SELECT
 		msf_query.permno,
 		msf_query.date,
@@ -31,26 +33,30 @@ Which creates a SQL statement:
 		msf_query.me,
 		msf_query.vweight
 	FROM ...
+```
 
 the `...` is where the magic happens. **wrds** makes sure that **CRSP** **permnos** are correctly lined up with the company names, computes the market cap, adjust returns for delistings, and computes annual buy-and-hold portfolio weights.
 
 Pulling book equity from **COMPUSTAT** is just as simple:
 
+```python
 	funda_query = wrds.FUNDAQuery().query.alias('funda_query')
 	q = sa.select([funda_query.c.lpermno,
                funda_query.c.gvkey,
                funda_query.c.datadate,
                funda_query.c.be
                ])
-
+```
 Which creates a SQL statement:
 
+```sql
 	SELECT
 		funda_query.lpermno,
 		funda_query.gvkey,
 		funda_query.datadate,
 		funda_query.be
 	FROM ...
+```
 
 **wrds** merges in **CRSP** **permno**s so that the **permno-gvkey** link is unique, and computes book equity following [Fama and French (1993)](http://www.sciencedirect.com/science/article/pii/0304405X93900235), and [Davis, Fama, and French (2000)](http://onlinelibrary.wiley.com/doi/10.1111/0022-1082.00209/abstract).
 
