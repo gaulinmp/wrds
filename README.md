@@ -82,6 +82,7 @@ Which creates a SQL statement:
 
 ## TO-DO:
 - Implement DSF support
+	- basic support added 2014/03/04
 	- MOM
 	- IVOL
 	- BAB
