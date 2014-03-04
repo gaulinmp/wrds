@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# encoding: utf-8
 import sqlalchemy as sa
 import pandas as pd
 import numpy as np
@@ -106,12 +108,12 @@ class WRDSQuery(object):
                     columns=res.keys(), coerce_float=True)
 
 '''
- .o88b.  .d88b.  .88b  d88. d8888b.         .d8b.  d8b   db d8b   db
-d8P  Y8 .8P  Y8. 88'YbdP`88 88  `8D        d8' `8b 888o  88 888o  88
-8P      88    88 88  88  88 88oodD'        88ooo88 88V8o 88 88V8o 88
-8b      88    88 88  88  88 88~~~   C8888D 88~~~88 88 V8o88 88 V8o88
-Y8b  d8 `8b  d8' 88  88  88 88             88   88 88  V888 88  V888
- `Y88P'  `Y88P'  YP  YP  YP 88             YP   YP VP   V8P VP   V8P
+ ██████╗ ██████╗ ███╗   ███╗██████╗        █████╗ 
+██╔════╝██╔═══██╗████╗ ████║██╔══██╗      ██╔══██╗
+██║     ██║   ██║██╔████╔██║██████╔╝█████╗███████║
+██║     ██║   ██║██║╚██╔╝██║██╔═══╝ ╚════╝██╔══██║
+╚██████╗╚██████╔╝██║ ╚═╝ ██║██║           ██║  ██║
+ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝           ╚═╝  ╚═╝
  '''
 class FUNDAQuery(WRDSQuery):
     """Generative interface for querying COMPUSTAT.FUNDA."""
@@ -256,12 +258,13 @@ class FUNDAQuery(WRDSQuery):
         return funda_df
 
 '''
- .o88b.  .d88b.  .88b  d88. d8888b.         .d88b.
-d8P  Y8 .8P  Y8. 88'YbdP`88 88  `8D        .8P  Y8.
-8P      88    88 88  88  88 88oodD'        88    88
-8b      88    88 88  88  88 88~~~   C8888D 88    88
-Y8b  d8 `8b  d8' 88  88  88 88             `8P  d8'
- `Y88P'  `Y88P'  YP  YP  YP 88              `Y88'Y8
+ ██████╗ ██████╗ ███╗   ███╗██████╗        ██████╗ 
+██╔════╝██╔═══██╗████╗ ████║██╔══██╗      ██╔═══██╗
+██║     ██║   ██║██╔████╔██║██████╔╝█████╗██║   ██║
+██║     ██║   ██║██║╚██╔╝██║██╔═══╝ ╚════╝██║▄▄ ██║
+╚██████╗╚██████╔╝██║ ╚═╝ ██║██║           ╚██████╔╝
+ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝            ╚══▀▀═╝ 
+                                                   
  '''
 class FUNDQQuery(WRDSQuery):
     """Generative interface for querying COMPUSTAT.FUNDQ."""
@@ -364,21 +367,23 @@ class FUNDQQuery(WRDSQuery):
         return fundq_df
 
 '''
- .o88b. d8888b. .d8888. d8888b.        .88b  d88.
-d8P  Y8 88  `8D 88'  YP 88  `8D        88'YbdP`88
-8P      88oobY' `8bo.   88oodD'        88  88  88
-8b      88`8b     `Y8b. 88~~~   C8888D 88  88  88
-Y8b  d8 88 `88. db   8D 88             88  88  88
- `Y88P' 88   YD `8888Y' 88             YP  YP  YP
+ ██████╗██████╗ ███████╗██████╗ 
+██╔════╝██╔══██╗██╔════╝██╔══██╗
+██║     ██████╔╝███████╗██████╔╝
+██║     ██╔══██╗╚════██║██╔═══╝ 
+╚██████╗██║  ██║███████║██║     
+ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝     
+                                
  '''
-class MSFQuery(WRDSQuery):
+class CRSPQuery(WRDSQuery):
 
-    def __init__(self, engine=None, delist=True, vwm=6, start_date='1925-12-31', end_date='',
+    def __init__(self, freq='msf', engine=None, delist=True, vwm=6, start_date='1925-12-31', end_date='',
                 limit=None, all_vars=None, **kwargs):
         """Generatively create SQL query to MSF.
 
             Parameters
             ----------
+            freq: str, default 'msf' (or 'dsf')
             delist: bool, default True
                 compute ret_adj, returns adjusted for delistings
             vwm: int, default 6
@@ -392,49 +397,56 @@ class MSFQuery(WRDSQuery):
                 limit the number of results in query
 
         """
-        super(MSFQuery, self).__init__(engine, limit)
-        logging.info("---- Creating a CRSP.MSF query session. ----")
-        msf = self.tables['msf']
-        msenames = self.tables['msenames']
-        msedelist = self.tables['msedelist']
+        super(CRSPQuery, self).__init__(engine, limit)
+        logging.info("---- Creating a CRSP query session. ----")
+        assert freq in ('msf','dsf'), "Invalid frequency: {0}".format(freq)
 
-        msf_vars = [msf.c.permno, msf.c.permco, msf.c.date,
-                    msf.c.prc, msf.c.shrout, msf.c.ret, msf.c.retx,
-                    (sa.func.abs(msf.c.prc)*msf.c.shrout).label('me')]
-        mse_vars = [msenames.c.ticker, msenames.c.ncusip,
-                    msenames.c.shrcd, msenames.c.exchcd]
+        sf = self.tables[freq]
+        # mse* and dse* files are identical 
+        senames = self.tables['senames']
+        sedelist = self.tables['sedelist']
+
+        sf_vars = [sf.c.permno, sf.c.permco, sf.c.date,
+                    sf.c.prc, sf.c.shrout, sf.c.ret, sf.c.retx,
+                    (sa.func.abs(sf.c.prc)*sf.c.shrout).label('me')]
+        se_vars = [senames.c.ticker, senames.c.ncusip,
+                    senames.c.shrcd, senames.c.exchcd]
 
         if all_vars:
-            msf_vars += msf.c
+            sf_vars += sf.c
 
         # Get the unique set of columns/variables
-        msf_vars = list(set(msf.c+msf_vars))
+        sf_vars = list(set(sf.c+sf_vars))
 
-        query = sa.select(msf_vars+mse_vars, limit=limit).\
-            where(msf.c.permno == msenames.c.permno).\
-            where(msf.c.date >= msenames.c.namedt).\
-            where(msf.c.date <= msenames.c.nameendt)
+        query = sa.select(sf_vars+se_vars, limit=limit).\
+            where(sf.c.permno == senames.c.permno).\
+            where(sf.c.date >= senames.c.namedt).\
+            where(sf.c.date <= senames.c.nameendt)
 
         if start_date:
-            query = query.where(msf.c.date >= start_date)
+            query = query.where(sf.c.date >= start_date)
         if end_date:
-            query = query.where(msf.c.date <= end_date)
+            query = query.where(sf.c.date <= end_date)
 
         if delist:
-            a = query.alias('a');b = msedelist.alias('b')
+            a = query.alias('a');b = sedelist.alias('b')
+
+            delist_where = [a.c.permno == b.c.permno]
+            if freq == 'dsf':
+                delist_where += [a.c.date == b.c.dlstdt]
+            elif freq == 'msf':
+                delist_where += [sa.func.extract('year',a.c.date) == sa.func.extract('year',b.c.dlstdt),
+                    sa.func.extract('month',a.c.date) == sa.func.extract('month',b.c.dlstdt)]
+
             query = sa.select([a,((1+a.c.ret)*\
                               (1+sa.func.coalesce(b.c.dlret,0))-1).label('ret_adj')],
                                limit=limit)\
             .select_from(sa.join(a, b,
-                sa.and_(
-                    a.c.permno == b.c.permno,
-                    sa.func.extract('year',a.c.date) == sa.func.extract('year',b.c.dlstdt),
-                    sa.func.extract('month',a.c.date) == sa.func.extract('month',b.c.dlstdt)
-                ),
+                sa.and_(*delist_where),
                 isouter=True)
             )
 
-        if vwm:
+        if (freq == 'msf' and vwm):
             a = query.alias('a')
             b = sa.select([sql.fiscal_year(a.c.date,vwm,True).label('fdate'), a]).alias('b')
             c = sa.select([sql.fiscal_year(a.c.date,vwm,True).label('fdate'),
@@ -468,14 +480,13 @@ class MSFQuery(WRDSQuery):
         crsp_df.set_index(['permno','date'],inplace=True)
         return crsp_df
 
-class DSFQuery(WRDSQuery):
-
-    def __init__(self, engine=None, start_date='1925-12-31', end_date='',
-                limit=None, all_vars=None, **kwargs):
-        super(DSFQuery, self).__init__(engine, limit)
-        logging.info("---- Creating a CRSP.DSF query session. ----")
-
-        raise NotImplementedError('No dsf support yet')
+'''
+ ██████╗ ████████╗██╗  ██╗███████╗██████╗ 
+██╔═══██╗╚══██╔══╝██║  ██║██╔════╝██╔══██╗
+██║   ██║   ██║   ███████║█████╗  ██████╔╝
+██║   ██║   ██║   ██╔══██║██╔══╝  ██╔══██╗
+╚██████╔╝   ██║   ██║  ██║███████╗██║  ██║
+'''
 
 class CCMNamesQuery(WRDSQuery):
 
