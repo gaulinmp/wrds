@@ -216,3 +216,7 @@ pip-log.txt
 
 #IPython checkpoints
 .ipynb_checkpoints
+
+# Sublime
+.sublime-project
+.sublime-workspace
