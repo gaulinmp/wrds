@@ -218,5 +218,5 @@ pip-log.txt
 .ipynb_checkpoints
 
 # Sublime
-.sublime-project
-.sublime-workspace
+*.sublime-project
+*.sublime-workspace
