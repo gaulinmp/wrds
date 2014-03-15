@@ -108,7 +108,7 @@ class WRDSQuery(object):
                     columns=res.keys(), coerce_float=True)
 
 '''
- ██████╗ ██████╗ ███╗   ███╗██████╗        █████╗ 
+ ██████╗ ██████╗ ███╗   ███╗██████╗        █████╗
 ██╔════╝██╔═══██╗████╗ ████║██╔══██╗      ██╔══██╗
 ██║     ██║   ██║██╔████╔██║██████╔╝█████╗███████║
 ██║     ██║   ██║██║╚██╔╝██║██╔═══╝ ╚════╝██╔══██║
@@ -258,13 +258,13 @@ class FUNDAQuery(WRDSQuery):
         return funda_df
 
 '''
- ██████╗ ██████╗ ███╗   ███╗██████╗        ██████╗ 
+ ██████╗ ██████╗ ███╗   ███╗██████╗        ██████╗
 ██╔════╝██╔═══██╗████╗ ████║██╔══██╗      ██╔═══██╗
 ██║     ██║   ██║██╔████╔██║██████╔╝█████╗██║   ██║
 ██║     ██║   ██║██║╚██╔╝██║██╔═══╝ ╚════╝██║▄▄ ██║
 ╚██████╗╚██████╔╝██║ ╚═╝ ██║██║           ╚██████╔╝
- ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝            ╚══▀▀═╝ 
-                                                   
+ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝            ╚══▀▀═╝
+
  '''
 class FUNDQQuery(WRDSQuery):
     """Generative interface for querying COMPUSTAT.FUNDQ."""
@@ -367,13 +367,13 @@ class FUNDQQuery(WRDSQuery):
         return fundq_df
 
 '''
- ██████╗██████╗ ███████╗██████╗ 
+ ██████╗██████╗ ███████╗██████╗
 ██╔════╝██╔══██╗██╔════╝██╔══██╗
 ██║     ██████╔╝███████╗██████╔╝
-██║     ██╔══██╗╚════██║██╔═══╝ 
-╚██████╗██║  ██║███████║██║     
- ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝     
-                                
+██║     ██╔══██╗╚════██║██╔═══╝
+╚██████╗██║  ██║███████║██║
+ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝
+
  '''
 class CRSPQuery(WRDSQuery):
 
@@ -402,7 +402,7 @@ class CRSPQuery(WRDSQuery):
         assert freq in ('msf','dsf'), "Invalid frequency: {0}".format(freq)
 
         sf = self.tables[freq]
-        # mse* and dse* files are identical 
+        # mse* and dse* files are identical
         senames = self.tables['senames']
         sedelist = self.tables['sedelist']
 
@@ -481,7 +481,7 @@ class CRSPQuery(WRDSQuery):
         return crsp_df
 
 '''
- ██████╗ ████████╗██╗  ██╗███████╗██████╗ 
+ ██████╗ ████████╗██╗  ██╗███████╗██████╗
 ██╔═══██╗╚══██╔══╝██║  ██║██╔════╝██╔══██╗
 ██║   ██║   ██║   ███████║█████╗  ██████╔╝
 ██║   ██║   ██║   ██╔══██║██╔══╝  ██╔══██╗
@@ -527,3 +527,120 @@ class CCMNamesQuery(WRDSQuery):
         self.query = query
 
 
+
+'''
+ ██████╗ ██╗   ██╗██╗██████╗  █████╗ ███╗   ██╗ ██████╗███████╗
+██╔════╝ ██║   ██║██║██╔══██╗██╔══██╗████╗  ██║██╔════╝██╔════╝
+██║  ███╗██║   ██║██║██║  ██║███████║██╔██╗ ██║██║     █████╗
+██║   ██║██║   ██║██║██║  ██║██╔══██║██║╚██╗██║██║     ██╔══╝
+╚██████╔╝╚██████╔╝██║██████╔╝██║  ██║██║ ╚████║╚██████╗███████╗
+ ╚═════╝  ╚═════╝ ╚═╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝╚══════╝
+ '''
+class TRGuidance(WRDSQuery):
+    """
+    Thomson Reuters (I/B/E/S) Guidance database pulled from FTP (since
+    discontinuation on WRDS).
+
+    Assumes database has merged table from current and historical files,
+    using labels from the new scheme:
+        IBESTicker
+        PeriodYear
+        PeriodMonth
+        EarningsEstimatesFiscalYearEnd
+        Periodicity
+        Measure
+        MeasureDescription
+        MeasurePerShare
+        Value1
+        Value2
+        Currency
+        Units
+        RangeDescriptionCode
+        RangeDescription
+        ActivationDateTime
+        AnnounceDateTime
+        ModifiedDateTime
+        DifferenceCode
+        DifferenceDescription
+        AccountingStandard
+        AccountingStandardDescription
+        MeanAtDate
+        ActionFlag
+        ActionFlagDescription
+        GuidanceCode
+        GuidanceCodeDescription
+        CUSIPorSEDOL
+        OfficialTicker
+        HomeMarketCode
+        LongCompanyName
+        InstrumentType
+        InstrumentTypeDescription
+        ExchangeCode
+        ExchangeName
+        CountryID
+        CountryName
+        ExchangeCountryID
+        ExchangeCountryName
+        SectorName
+        IndustryName
+        IBESTickerStartDate
+        IBESTickerEndDate
+        ModifiedDate
+        SplitActivationDate
+        SplitEntryDate
+        SplitFactor
+        CumulativeSplitFactor
+    """
+
+    def __init__(self, engine=None, start_date='1994-12-31', end_date='',
+                 limit=None, all_vars=None, **kwargs):
+        """Generatively create SQL query to IBES Guidance.
+
+            Parameters
+            ----------
+            start_date: str, default '1994-12-31'
+                start of sample, default is beginning of CRSP
+            end_date: str, default ''
+            limit: int, default None
+                limit the number of results in query
+
+        """
+        super(TRGuidance, self).__init__(engine, limit)
+        logging.info("---- Creating a TRGuidance query session. ----")
+
+        _tablename = 'guidancenew'
+        try:
+            sf = self.tables[_tablename]
+        except IndexError:
+            logging.error("TRGuidance.__init__: Table %s does not exist." %
+                          _tablename)
+            raise
+
+        sf_vars = [sf.c.ibesticker, sf.c.cusiporsedol, sf.c.announcedatetime,
+                   sf.c.periodyear, sf.c.periodmonth, sf.c.measure,
+                   sf.c.value1, sf.c.value2]
+
+        if all_vars:
+            sf_vars += sf.c
+
+        # Get the unique set of columns/variables
+        sf_vars = list(set(sf_vars))
+
+        query = sa.select(sf_vars, limit=limit)
+
+        if start_date:
+            query = query.where(sf.c.announcedatetime >= start_date)
+        if end_date:
+            query = query.where(sf.c.announcedatetime <= end_date)
+
+        logging.debug(query)
+        self.query = query
+
+    def _to_df(self, rows, res, **kwargs):
+
+        _df = pd.DataFrame.from_records(rows, columns=res.keys(),
+                                        coerce_float=True)
+        _df['date'] = pd.to_datetime(_df['announcedatetime'])
+
+        _df.set_index(['ibesticker', 'announcedatetime'], inplace=True)
+        return _df
